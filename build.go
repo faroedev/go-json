@@ -5,10 +5,15 @@ import (
 	"strings"
 )
 
-// The zero value is a ready-to-use builder.
+// Use NewObjectBuilder().
 type ObjectBuilderStruct struct {
-	b           strings.Builder
+	b           *strings.Builder
 	memberCount int
+}
+
+func NewObjectBuilder() *ObjectBuilderStruct {
+	objectBuilder := &ObjectBuilderStruct{b: &strings.Builder{}}
+	return objectBuilder
 }
 
 // Encodes the name to a JSON string and adds a new object member with the value untouched.
@@ -95,10 +100,15 @@ func (objectBuilder *ObjectBuilderStruct) Done() string {
 	return objectBuilder.b.String()
 }
 
-// The zero value is a ready-to-use builder.
+// Use NewArrayBuilder().
 type ArrayBuilderStruct struct {
-	b            strings.Builder
+	b            *strings.Builder
 	elementCount int
+}
+
+func NewArrayBuilder() *ArrayBuilderStruct {
+	arrayBuilder := &ArrayBuilderStruct{b: &strings.Builder{}}
+	return arrayBuilder
 }
 
 // Adds the JSON value as a new array element.
