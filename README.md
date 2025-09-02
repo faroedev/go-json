@@ -71,7 +71,7 @@ import (
 )
 
 func main() {
-    jsonObjectBuilder := json.ObjectBuilderStruct{}
+    jsonObjectBuilder := json.NewObjectBuilder()
     jsonObjectBuilder.AddString("name", "faroe")
     s := jsonObjectBuilder.Done()
     fmt.Println(s)
