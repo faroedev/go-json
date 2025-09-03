@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Use NewObjectBuilder().
+// Use [NewObjectBuilder].
 type ObjectBuilderStruct struct {
 	b           *strings.Builder
 	memberCount int
@@ -100,7 +100,7 @@ func (objectBuilder *ObjectBuilderStruct) Done() string {
 	return objectBuilder.b.String()
 }
 
-// Use NewArrayBuilder().
+// Use [NewArrayBuilder].
 type ArrayBuilderStruct struct {
 	b            *strings.Builder
 	elementCount int
