@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseString(t *testing.T) {
-	successCases := []SuccessTestCase{
+	successCases := []successTestCaseStruct{
 		{`"hello"`, "hello"},
 		{`"say \"hi\"!"`, `say "hi"!`},
 		{`"\\\/\"\b\f\n\r\t"`, "\\/\"\b\f\n\r\t"},
@@ -41,7 +41,7 @@ func TestParseString(t *testing.T) {
 	}
 }
 
-type SuccessTestCase struct {
+type successTestCaseStruct struct {
 	input    string
 	expected string
 }
