@@ -271,7 +271,7 @@ func (object *ObjectStruct) ExistsAndIsNull(key string) bool {
 // Embedded objects are encoded with ObjectStruct.String().
 // Embedded arrays are encoded with ArrayStruct.String().
 func (object *ObjectStruct) String() string {
-	builder := ObjectBuilderStruct{}
+	builder := NewObjectBuilder()
 	for _, key := range object.keys {
 		if value, ok := object.strings[key]; ok {
 			builder.AddString(key, value)
