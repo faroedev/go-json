@@ -290,7 +290,7 @@ func (array *ArrayStruct) ExistsAndIsNull(index int) bool {
 // Embedded objects are encoded with ObjectStruct.String().
 // Embedded arrays are encoded with ArrayStruct.String().
 func (array *ArrayStruct) String() string {
-	builder := ArrayBuilderStruct{}
+	builder := NewArrayBuilder()
 	for i := range array.length {
 		if value, ok := array.strings[i]; ok {
 			builder.AddString(value)
