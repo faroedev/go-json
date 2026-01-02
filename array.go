@@ -16,8 +16,8 @@ type ArrayStruct struct {
 	length  int
 }
 
-func NewArray() *ArrayStruct {
-	array := &ArrayStruct{
+func NewArray() ArrayStruct {
+	array := ArrayStruct{
 		strings: map[int]string{},
 		numbers: map[int]string{},
 		bools:   map[int]bool{},

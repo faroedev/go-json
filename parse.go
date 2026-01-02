@@ -216,7 +216,7 @@ func parseEmbeddedObject(r io.RuneScanner) (ObjectStruct, error) {
 }
 
 func parseEmbeddedArray(r io.RuneScanner) (ArrayStruct, error) {
-	array := ArrayStruct{}
+	array := NewArray()
 
 	err := skipWhitespace(r)
 	if err != nil {
