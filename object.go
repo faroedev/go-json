@@ -16,8 +16,8 @@ type ObjectStruct struct {
 	keys    []string
 }
 
-func NewObject() *ObjectStruct {
-	object := &ObjectStruct{
+func NewObject() ObjectStruct {
+	object := ObjectStruct{
 		strings: map[string]string{},
 		numbers: map[string]string{},
 		bools:   map[string]bool{},
