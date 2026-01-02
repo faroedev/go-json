@@ -1,13 +1,11 @@
 package json
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 )
 
 // Represents a JSON array.
-// The zero value is a ready-to-use empty array.
 type ArrayStruct struct {
 	strings map[int]string
 	numbers map[int]string
@@ -16,6 +14,19 @@ type ArrayStruct struct {
 	objects map[int]ObjectStruct
 	arrays  map[int]ArrayStruct
 	length  int
+}
+
+func NewArray() *ArrayStruct {
+	array := &ArrayStruct{
+		strings: map[int]string{},
+		numbers: map[int]string{},
+		bools:   map[int]bool{},
+		nulls:   map[int]struct{}{},
+		objects: map[int]ObjectStruct{},
+		arrays:  map[int]ArrayStruct{},
+		length:  0,
+	}
+	return array
 }
 
 func (array *ArrayStruct) Length() int {
@@ -38,26 +49,17 @@ func (array *ArrayStruct) SetString(index int, value string) {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
-	if array.strings == nil {
-		array.strings = map[int]string{}
-	}
 	array.strings[index] = value
 }
 
 // Appends a JSON string value at the end of the array.
 func (array *ArrayStruct) AddString(value string) {
-	if array.strings == nil {
-		array.strings = map[int]string{}
-	}
 	array.strings[array.length] = value
 	array.length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON string.
 func (array *ArrayStruct) GetString(index int) (string, error) {
-	if array.strings == nil {
-		return "", fmt.Errorf("no matching member")
-	}
 	value, ok := array.strings[index]
 	if !ok {
 		return "", fmt.Errorf("no matching member")
@@ -83,9 +85,6 @@ func (array *ArrayStruct) AddNumber(value string) {
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON number.
 func (array *ArrayStruct) GetNumber(key int) (string, error) {
-	if array.numbers == nil {
-		return "", fmt.Errorf("no matching member")
-	}
 	value, ok := array.numbers[key]
 	if !ok {
 		return "", fmt.Errorf("no matching member")
@@ -114,7 +113,7 @@ func (array *ArrayStruct) GetInt(key int) (int, error) {
 	}
 	parsed, err := strconv.Atoi(value)
 	if err != nil {
-		return 0, errors.Join(fmt.Errorf("no matching member"), err)
+		return 0, fmt.Errorf("failed to parse int: %s", err.Error())
 	}
 	return parsed, nil
 }
@@ -140,7 +139,7 @@ func (array *ArrayStruct) GetInt64(key int) (int64, error) {
 	}
 	parsed, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return 0, errors.Join(fmt.Errorf("no matching member"), err)
+		return 0, fmt.Errorf("failed to parse int64: %s", err.Error())
 	}
 	return parsed, nil
 }
@@ -166,7 +165,7 @@ func (array *ArrayStruct) GetInt32(key int) (int32, error) {
 	}
 	parsed, err := strconv.ParseInt(value, 10, 32)
 	if err != nil {
-		return 0, errors.Join(fmt.Errorf("no matching member"), err)
+		return 0, fmt.Errorf("failed to parse int32: %s", err.Error())
 	}
 	return int32(parsed), nil
 }
@@ -189,9 +188,6 @@ func (array *ArrayStruct) AddBool(value bool) {
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON boolean.
 func (array *ArrayStruct) GetBool(index int) (bool, error) {
-	if array.bools == nil {
-		return false, fmt.Errorf("no matching member")
-	}
 	value, ok := array.bools[index]
 	if !ok {
 		return false, fmt.Errorf("no matching member")
@@ -217,9 +213,6 @@ func (array *ArrayStruct) AddJSONObject(value ObjectStruct) {
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON object.
 func (array *ArrayStruct) GetJSONObject(index int) (ObjectStruct, error) {
-	if array.objects == nil {
-		return ObjectStruct{}, fmt.Errorf("no matching member")
-	}
 	value, ok := array.objects[index]
 	if !ok {
 		return value, fmt.Errorf("no matching member")
@@ -245,9 +238,6 @@ func (array *ArrayStruct) AddJSONArray(value ArrayStruct) {
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON array.
 func (array *ArrayStruct) GetJSONArray(index int) (ArrayStruct, error) {
-	if array.arrays == nil {
-		return ArrayStruct{}, fmt.Errorf("no matching member")
-	}
 	value, ok := array.arrays[index]
 	if !ok {
 		return value, fmt.Errorf("no matching member")

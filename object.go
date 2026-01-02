@@ -6,7 +6,6 @@ import (
 )
 
 // Represents a JSON object.
-// The zero value is a ready-to-use empty object.
 type ObjectStruct struct {
 	strings map[string]string
 	numbers map[string]string
@@ -15,6 +14,19 @@ type ObjectStruct struct {
 	objects map[string]ObjectStruct
 	arrays  map[string]ArrayStruct
 	keys    []string
+}
+
+func NewObject() *ObjectStruct {
+	object := &ObjectStruct{
+		strings: map[string]string{},
+		numbers: map[string]string{},
+		bools:   map[string]bool{},
+		nulls:   map[string]struct{}{},
+		objects: map[string]ObjectStruct{},
+		arrays:  map[string]ArrayStruct{},
+		keys:    nil,
+	}
+	return object
 }
 
 func (object *ObjectStruct) Has(key string) bool {
@@ -61,17 +73,11 @@ func (object *ObjectStruct) addKey(key string) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetString(key string, value string) {
 	object.addKey(key)
-	if object.strings == nil {
-		object.strings = map[string]string{}
-	}
 	object.strings[key] = value
 }
 
 // Returns an error if the key doesn't exist or the value isn't a JSON string.
 func (object *ObjectStruct) GetString(key string) (string, error) {
-	if object.strings == nil {
-		return "", fmt.Errorf("no matching member")
-	}
 	value, ok := object.strings[key]
 	if !ok {
 		return "", fmt.Errorf("no matching member")
@@ -83,17 +89,11 @@ func (object *ObjectStruct) GetString(key string) (string, error) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetNumber(key string, value string) {
 	object.addKey(key)
-	if object.numbers == nil {
-		object.numbers = map[string]string{}
-	}
 	object.numbers[key] = value
 }
 
 // Returns an error if the key doesn't exist or the value isn't a JSON number
 func (object *ObjectStruct) GetNumber(key string) (string, error) {
-	if object.numbers == nil {
-		return "", fmt.Errorf("no matching member")
-	}
 	value, ok := object.numbers[key]
 	if !ok {
 		return "", fmt.Errorf("no matching member")
@@ -111,16 +111,13 @@ func (object *ObjectStruct) SetInt(key string, value int) {
 // the value isn't a JSON number,
 // or the JSON number cannot be represented as an int.
 func (object *ObjectStruct) GetInt(key string) (int, error) {
-	if object.numbers == nil {
-		return 0, fmt.Errorf("no matching member")
-	}
-	value, ok := object.numbers[key]
-	if !ok {
-		return 0, fmt.Errorf("no matching member")
+	value, err := object.GetNumber(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get number: %s", err.Error())
 	}
 	parsed, err := strconv.Atoi(value)
 	if err != nil {
-		return 0, fmt.Errorf("no matching member")
+		return 0, fmt.Errorf("failed to parse int: %s", err.Error())
 	}
 	return parsed, nil
 }
@@ -135,16 +132,13 @@ func (object *ObjectStruct) SetInt32(key string, value int32) {
 // the value isn't a JSON number,
 // or the JSON number cannot be represented as an int32.
 func (object *ObjectStruct) GetInt32(key string) (int32, error) {
-	if object.numbers == nil {
-		return 0, fmt.Errorf("no matching member")
-	}
-	value, ok := object.numbers[key]
-	if !ok {
-		return 0, fmt.Errorf("no matching member")
-	}
-	parsed, err := strconv.ParseUint(value, 10, 32)
+	value, err := object.GetNumber(key)
 	if err != nil {
-		return 0, fmt.Errorf("no matching member")
+		return 0, fmt.Errorf("failed to get number: %s", err.Error())
+	}
+	parsed, err := strconv.ParseInt(value, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse int32: %s", err.Error())
 	}
 	return int32(parsed), nil
 }
@@ -159,16 +153,13 @@ func (object *ObjectStruct) SetInt64(key string, value int64) {
 // the value isn't a JSON number,
 // or the JSON number cannot be represented as an int64.
 func (object *ObjectStruct) GetInt64(key string) (int64, error) {
-	if object.numbers == nil {
-		return 0, fmt.Errorf("no matching member")
-	}
-	value, ok := object.numbers[key]
-	if !ok {
-		return 0, fmt.Errorf("no matching member")
+	value, err := object.GetNumber(key)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get number: %s", err.Error())
 	}
 	parsed, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("no matching member")
+		return 0, fmt.Errorf("failed to parse int64: %s", err.Error())
 	}
 	return parsed, nil
 }
@@ -177,17 +168,11 @@ func (object *ObjectStruct) GetInt64(key string) (int64, error) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetBool(key string, value bool) {
 	object.addKey(key)
-	if object.bools == nil {
-		object.bools = map[string]bool{}
-	}
 	object.bools[key] = value
 }
 
 // Returns an error if the key doesn't exist or the value isn't a JSON boolean.
 func (object *ObjectStruct) GetBool(key string) (bool, error) {
-	if object.bools == nil {
-		return false, fmt.Errorf("no matching member")
-	}
 	value, ok := object.bools[key]
 	if !ok {
 		return false, fmt.Errorf("no matching member")
@@ -199,17 +184,11 @@ func (object *ObjectStruct) GetBool(key string) (bool, error) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetJSONObject(key string, value ObjectStruct) {
 	object.addKey(key)
-	if object.objects == nil {
-		object.objects = map[string]ObjectStruct{}
-	}
 	object.objects[key] = value
 }
 
 // Returns an error if the key doesn't exist or the value isn't a JSON object.
 func (object *ObjectStruct) GetJSONObject(key string) (ObjectStruct, error) {
-	if object.objects == nil {
-		return ObjectStruct{}, fmt.Errorf("no matching member")
-	}
 	value, ok := object.objects[key]
 	if !ok {
 		return ObjectStruct{}, fmt.Errorf("no matching member")
@@ -221,17 +200,11 @@ func (object *ObjectStruct) GetJSONObject(key string) (ObjectStruct, error) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetJSONArray(key string, value ArrayStruct) {
 	object.addKey(key)
-	if object.arrays == nil {
-		object.arrays = map[string]ArrayStruct{}
-	}
 	object.arrays[key] = value
 }
 
 // Returns an error if the key doesn't exist or the value isn't a JSON array.
 func (object *ObjectStruct) GetJSONArray(key string) (ArrayStruct, error) {
-	if object.arrays == nil {
-		return ArrayStruct{}, fmt.Errorf("no matching member")
-	}
 	value, ok := object.arrays[key]
 	if !ok {
 		return ArrayStruct{}, fmt.Errorf("no matching member")
@@ -243,9 +216,6 @@ func (object *ObjectStruct) GetJSONArray(key string) (ArrayStruct, error) {
 // Overrides any member with the same name.
 func (object *ObjectStruct) SetNull(key string) {
 	object.addKey(key)
-	if object.nulls == nil {
-		object.nulls = map[string]struct{}{}
-	}
 	object.nulls[key] = struct{}{}
 }
 
