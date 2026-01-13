@@ -46,7 +46,7 @@ func encodeString(s string, characterEscapingBehavior StringCharacterEscapingBeh
 	b := strings.Builder{}
 	b.WriteRune('"')
 	for _, char := range s {
-		if char >= 0x0000 && char <= 0x001f && char != '"' && char != '\\' {
+		if char >= 0x20 && char != '"' && char != '\\' {
 			if characterEscapingBehavior.UseCharacter(char) {
 				b.WriteRune(char)
 				continue
