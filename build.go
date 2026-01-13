@@ -7,12 +7,13 @@ import (
 
 // Use [NewObjectBuilder].
 type ObjectBuilderStruct struct {
-	b           *strings.Builder
-	memberCount int
+	b                               *strings.Builder
+	stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface
+	memberCount                     int
 }
 
-func NewObjectBuilder() *ObjectBuilderStruct {
-	objectBuilder := &ObjectBuilderStruct{b: &strings.Builder{}}
+func NewObjectBuilder(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) *ObjectBuilderStruct {
+	objectBuilder := &ObjectBuilderStruct{b: &strings.Builder{}, stringCharacterEscapingBehavior: stringCharacterEscapingBehavior}
 	return objectBuilder
 }
 
@@ -28,7 +29,7 @@ func (objectBuilder *ObjectBuilderStruct) AddJSON(name string, value string) {
 	if objectBuilder.memberCount > 0 {
 		objectBuilder.b.WriteRune(',')
 	}
-	encodedName := encodeString(name)
+	encodedName := encodeString(name, objectBuilder.stringCharacterEscapingBehavior)
 	objectBuilder.b.WriteString(encodedName)
 	objectBuilder.b.WriteRune(':')
 	objectBuilder.b.WriteString(value)
@@ -40,7 +41,7 @@ func (objectBuilder *ObjectBuilderStruct) AddJSON(name string, value string) {
 //
 // Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
 func (objectBuilder *ObjectBuilderStruct) AddString(name string, value string) {
-	encoded := encodeString(value)
+	encoded := encodeString(value, objectBuilder.stringCharacterEscapingBehavior)
 	objectBuilder.AddJSON(name, encoded)
 }
 
@@ -102,12 +103,13 @@ func (objectBuilder *ObjectBuilderStruct) Done() string {
 
 // Use [NewArrayBuilder].
 type ArrayBuilderStruct struct {
-	b            *strings.Builder
-	elementCount int
+	b                               *strings.Builder
+	stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface
+	elementCount                    int
 }
 
-func NewArrayBuilder() *ArrayBuilderStruct {
-	arrayBuilder := &ArrayBuilderStruct{b: &strings.Builder{}}
+func NewArrayBuilder(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) *ArrayBuilderStruct {
+	arrayBuilder := &ArrayBuilderStruct{b: &strings.Builder{}, stringCharacterEscapingBehavior: stringCharacterEscapingBehavior}
 	return arrayBuilder
 }
 
@@ -127,7 +129,7 @@ func (arrayBuilder *ArrayBuilderStruct) AddJSON(value string) {
 // Encodes the value to a JSON string and adds it as a new array element.
 // Control characters not allowed in JSON strings are ignored when encoding.
 func (arrayBuilder *ArrayBuilderStruct) AddString(value string) {
-	encoded := encodeString(value)
+	encoded := encodeString(value, arrayBuilder.stringCharacterEscapingBehavior)
 	arrayBuilder.AddJSON(encoded)
 }
 

@@ -279,8 +279,8 @@ func (array *ArrayStruct) ExistsAndIsNull(index int) bool {
 // Encodes the array using ArrayBuilderStruct.
 // Embedded objects are encoded with ObjectStruct.String().
 // Embedded arrays are encoded with ArrayStruct.String().
-func (array *ArrayStruct) String() string {
-	builder := NewArrayBuilder()
+func (array *ArrayStruct) String(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
+	builder := NewArrayBuilder(stringCharacterEscapingBehavior)
 	for i := range array.length {
 		if value, ok := array.strings[i]; ok {
 			builder.AddString(value)
@@ -299,11 +299,11 @@ func (array *ArrayStruct) String() string {
 			continue
 		}
 		if value, ok := array.objects[i]; ok {
-			builder.AddJSON(value.String())
+			builder.AddJSON(value.String(stringCharacterEscapingBehavior))
 			continue
 		}
 		if value, ok := array.arrays[i]; ok {
-			builder.AddJSON(value.String())
+			builder.AddJSON(value.String(stringCharacterEscapingBehavior))
 			continue
 		}
 	}

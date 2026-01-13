@@ -240,8 +240,8 @@ func (object *ObjectStruct) ExistsAndIsNull(key string) bool {
 // Encodes the object using ObjectBuilderStruct.
 // Embedded objects are encoded with ObjectStruct.String().
 // Embedded arrays are encoded with ArrayStruct.String().
-func (object *ObjectStruct) String() string {
-	builder := NewObjectBuilder()
+func (object *ObjectStruct) String(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
+	builder := NewObjectBuilder(stringCharacterEscapingBehavior)
 	for _, key := range object.keys {
 		if value, ok := object.strings[key]; ok {
 			builder.AddString(key, value)
@@ -260,11 +260,11 @@ func (object *ObjectStruct) String() string {
 			continue
 		}
 		if value, ok := object.objects[key]; ok {
-			builder.AddJSON(key, value.String())
+			builder.AddJSON(key, value.String(stringCharacterEscapingBehavior))
 			continue
 		}
 		if value, ok := object.arrays[key]; ok {
-			builder.AddJSON(key, value.String())
+			builder.AddJSON(key, value.String(stringCharacterEscapingBehavior))
 			continue
 		}
 	}
