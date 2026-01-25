@@ -1,4 +1,4 @@
-# github.com/faroedev/go-json
+# github.com/pilcrowonpaper/go-json
 
 A JSON parser and encoder.
 
@@ -11,7 +11,7 @@ package main
 
 import (
     "fmt"
-    "github.com/faroedev/go-json"
+    "github.com/pilcrowonpaper/go-json"
 )
 
 func main() {
@@ -39,7 +39,7 @@ package main
 
 import (
     "fmt"
-    "github.com/faroedev/go-json"
+    "github.com/pilcrowonpaper/go-json"
 )
 
 func main() {
@@ -67,7 +67,7 @@ package main
 
 import (
     "fmt"
-    "github.com/faroedev/go-json"
+    "github.com/pilcrowonpaper/go-json"
 )
 
 func main() {
