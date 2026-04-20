@@ -27,7 +27,7 @@ func main() {
     }
     fmt.Println(name)
 
-    jsonObject.SetString(name, "faroe")
+    jsonObject.SetString(name, "pilcrow")
     fmt.Println(jsonObject.String())
 }
 ```
@@ -55,7 +55,7 @@ func main() {
     }
     fmt.Println(name)
 
-    jsonArray.SetString(0, "faroe")
+    jsonArray.SetString(0, "pilcrow")
     fmt.Println(jsonArray.String())
 }
 ```
@@ -72,7 +72,7 @@ import (
 
 func main() {
     jsonObjectBuilder := json.NewObjectBuilder()
-    jsonObjectBuilder.AddString("name", "faroe")
+    jsonObjectBuilder.AddString("name", "pilcrow")
     s := jsonObjectBuilder.Done()
     fmt.Println(s)
 }

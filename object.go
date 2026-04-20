@@ -13,7 +13,7 @@ type ObjectStruct struct {
 	nulls   map[string]struct{}
 	objects map[string]ObjectStruct
 	arrays  map[string]ArrayStruct
-	keys    []string
+	Keys    []string // Read-only.
 }
 
 func NewObject() ObjectStruct {
@@ -24,7 +24,7 @@ func NewObject() ObjectStruct {
 		nulls:   map[string]struct{}{},
 		objects: map[string]ObjectStruct{},
 		arrays:  map[string]ArrayStruct{},
-		keys:    nil,
+		Keys:    nil,
 	}
 	return object
 }
@@ -65,7 +65,7 @@ func (object *ObjectStruct) addKey(key string) {
 	} else if _, ok := object.arrays[key]; ok {
 		delete(object.arrays, key)
 	} else {
-		object.keys = append(object.keys, key)
+		object.Keys = append(object.Keys, key)
 	}
 }
 
@@ -242,7 +242,7 @@ func (object *ObjectStruct) ExistsAndIsNull(key string) bool {
 // Embedded arrays are encoded with ArrayStruct.String().
 func (object *ObjectStruct) String(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
 	builder := NewObjectBuilder(stringCharacterEscapingBehavior)
-	for _, key := range object.keys {
+	for _, key := range object.Keys {
 		if value, ok := object.strings[key]; ok {
 			builder.AddString(key, value)
 			continue

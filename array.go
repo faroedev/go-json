@@ -13,7 +13,7 @@ type ArrayStruct struct {
 	nulls   map[int]struct{}
 	objects map[int]ObjectStruct
 	arrays  map[int]ArrayStruct
-	length  int
+	Length  int // Read-only.
 }
 
 func NewArray() ArrayStruct {
@@ -24,13 +24,9 @@ func NewArray() ArrayStruct {
 		nulls:   map[int]struct{}{},
 		objects: map[int]ObjectStruct{},
 		arrays:  map[int]ArrayStruct{},
-		length:  0,
+		Length:  0,
 	}
 	return array
-}
-
-func (array *ArrayStruct) Length() int {
-	return array.length
 }
 
 func (array *ArrayStruct) removeElement(index int) {
@@ -45,7 +41,7 @@ func (array *ArrayStruct) removeElement(index int) {
 // Sets a JSON string value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetString(index int, value string) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -54,8 +50,8 @@ func (array *ArrayStruct) SetString(index int, value string) {
 
 // Appends a JSON string value at the end of the array.
 func (array *ArrayStruct) AddString(value string) {
-	array.strings[array.length] = value
-	array.length++
+	array.strings[array.Length] = value
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON string.
@@ -70,7 +66,7 @@ func (array *ArrayStruct) GetString(index int) (string, error) {
 // Sets a JSON number value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetNumber(index int, value string) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -79,8 +75,8 @@ func (array *ArrayStruct) SetNumber(index int, value string) {
 
 // Appends a JSON number value at the end of the array.
 func (array *ArrayStruct) AddNumber(value string) {
-	array.numbers[array.length] = value
-	array.length++
+	array.numbers[array.Length] = value
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON number.
@@ -173,7 +169,7 @@ func (array *ArrayStruct) GetInt32(key int) (int32, error) {
 // Sets a JSON boolean value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetBool(index int, value bool) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -182,8 +178,8 @@ func (array *ArrayStruct) SetBool(index int, value bool) {
 
 // Appends a JSON boolean value at the end of the array.
 func (array *ArrayStruct) AddBool(value bool) {
-	array.bools[array.length] = value
-	array.length++
+	array.bools[array.Length] = value
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON boolean.
@@ -198,7 +194,7 @@ func (array *ArrayStruct) GetBool(index int) (bool, error) {
 // Sets a JSON object value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetJSONObject(index int, value ObjectStruct) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -207,8 +203,8 @@ func (array *ArrayStruct) SetJSONObject(index int, value ObjectStruct) {
 
 // Appends a JSON object value at the end of the array.
 func (array *ArrayStruct) AddJSONObject(value ObjectStruct) {
-	array.objects[array.length] = value
-	array.length++
+	array.objects[array.Length] = value
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON object.
@@ -223,7 +219,7 @@ func (array *ArrayStruct) GetJSONObject(index int) (ObjectStruct, error) {
 // Sets a JSON array value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetJSONArray(index int, value ArrayStruct) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -232,8 +228,8 @@ func (array *ArrayStruct) SetJSONArray(index int, value ArrayStruct) {
 
 // Appends a JSON array value at the end of the array.
 func (array *ArrayStruct) AddJSONArray(value ArrayStruct) {
-	array.arrays[array.length] = value
-	array.length++
+	array.arrays[array.Length] = value
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index or the value isn't a JSON array.
@@ -248,7 +244,7 @@ func (array *ArrayStruct) GetJSONArray(index int) (ArrayStruct, error) {
 // Sets a JSON null value at index.
 // Panics if the index is out of bounds.
 func (array *ArrayStruct) SetNull(index int) {
-	if index >= array.length {
+	if index >= array.Length {
 		panic("out of bounds")
 	}
 	array.removeElement(index)
@@ -257,8 +253,8 @@ func (array *ArrayStruct) SetNull(index int) {
 
 // Appends a JSON null value at the end of the array.
 func (array *ArrayStruct) AddNull() {
-	array.nulls[array.length] = struct{}{}
-	array.length++
+	array.nulls[array.Length] = struct{}{}
+	array.Length++
 }
 
 // Returns an error if an item doesn't exist in the index.
@@ -281,7 +277,7 @@ func (array *ArrayStruct) ExistsAndIsNull(index int) bool {
 // Embedded arrays are encoded with ArrayStruct.String().
 func (array *ArrayStruct) String(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
 	builder := NewArrayBuilder(stringCharacterEscapingBehavior)
-	for i := range array.length {
+	for i := range array.Length {
 		if value, ok := array.strings[i]; ok {
 			builder.AddString(value)
 			continue
