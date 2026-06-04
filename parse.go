@@ -9,46 +9,54 @@ import (
 	"unicode/utf16"
 )
 
-// Parses a JSON object. Ignores any leading and trailing whitespace.
+// Parses a JSON-encoded string. Ignores any leading and trailing whitespace.
+// Returns one of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
 // Returns an error if the string is an invalid JSON object or
 // an object has duplicate member names.
 //
 // JSON object member names are compared after resolving any escaped characters.
-func ParseObject(s string) (ObjectStruct, error) {
+func Parse(s string) (any, error) {
 	r := strings.NewReader(s)
 
-	parsed, err := parseEmbeddedObject(r)
+	jsonValue, err := parseEmbeddedValue(r)
 	if err != nil {
-		return ObjectStruct{}, fmt.Errorf("failed to parse embedded object: %s", err.Error())
+		return nil, fmt.Errorf("failed to parse value: %s", err.Error())
 	}
 
 	err = parseEnd(r)
 	if err != nil {
-		return ObjectStruct{}, fmt.Errorf("failed to parse end: %s", err.Error())
+		return nil, fmt.Errorf("failed to parse end: %s", err.Error())
 	}
 
-	return parsed, nil
+	return jsonValue, nil
 }
 
-// Parses a JSON array. Ignores any leading and trailing whitespace.
-// Returns an error if the string is an invalid JSON array or
-// an object has duplicate member names.
-//
-// JSON object member names are compared after resolving any escaped characters.
-func ParseArray(s string) (ArrayStruct, error) {
-	r := strings.NewReader(s)
-
-	parsed, err := parseEmbeddedArray(r)
+// Parses a JSON-encoded string as an object with [Parse].
+func ParseObject(s string) (ObjectType, error) {
+	jsonValue, err := Parse(s)
 	if err != nil {
-		return ArrayStruct{}, fmt.Errorf("failed to parse embedded array: %s", err.Error())
+		return nil, fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 
-	err = parseEnd(r)
+	jsonObject, ok := jsonValue.(ObjectType)
+	if !ok {
+		return nil, fmt.Errorf("value not an object")
+	}
+	return jsonObject, nil
+}
+
+// Parses a JSON-encoded string as an array with [Parse].
+func ParseArray(s string) (ArrayType, error) {
+	jsonValue, err := Parse(s)
 	if err != nil {
-		return ArrayStruct{}, fmt.Errorf("failed to parse end: %s", err.Error())
+		return nil, fmt.Errorf("failed to parse json: %s", err.Error())
 	}
 
-	return parsed, nil
+	jsonArray, ok := jsonValue.(ArrayType)
+	if !ok {
+		return nil, fmt.Errorf("value not an array")
+	}
+	return jsonArray, nil
 }
 
 func parseEnd(r io.RuneScanner) error {
@@ -71,267 +79,228 @@ func parseEnd(r io.RuneScanner) error {
 	return nil
 }
 
-func parseEmbeddedObject(r io.RuneScanner) (ObjectStruct, error) {
+func parseEmbeddedValue(r io.RuneScanner) (any, error) {
+	err := skipWhitespace(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+	}
+
+	nextChar, _, err := r.ReadRune()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rune: %s", err.Error())
+	}
+	if nextChar == unicode.ReplacementChar {
+		return nil, fmt.Errorf("invalid encoding")
+	}
+	err = r.UnreadRune()
+	if err != nil {
+		return nil, fmt.Errorf("failed to unread rune: %s", err.Error())
+	}
+
+	if nextChar == '{' {
+		jsonObject, err := parseEmbeddedObject(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse object: %s", err.Error())
+		}
+		return jsonObject, nil
+	}
+	if nextChar == '[' {
+		jsonArray, err := parseEmbeddedArray(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse array: %s", err.Error())
+		}
+		return jsonArray, nil
+	}
+	if nextChar == '"' {
+		jsonString, err := parseString(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse string: %s", err.Error())
+		}
+		return jsonString, nil
+	}
+	if isNumberDigitCharacter(nextChar) {
+		jsonNumber, err := parseNumber(r)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse number: %s", err.Error())
+		}
+		return jsonNumber, nil
+	}
+
+	literalName, err := parseLiteralName(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse literal name: %s", err.Error())
+	}
+
+	switch literalName {
+	case "true":
+		return True, nil
+	case "false":
+		return False, nil
+	case "null":
+		return Null, nil
+	default:
+		return "", fmt.Errorf("invalid literal name: %s", literalName)
+	}
+}
+
+func parseEmbeddedObject(r io.RuneScanner) (ObjectType, error) {
 	object := NewObject()
 
 	err := skipWhitespace(r)
 	if err != nil {
-		return ObjectStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+		return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 	}
 
 	char, _, err := r.ReadRune()
 	if err != nil {
-		return ObjectStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+		return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 	}
 	if char == unicode.ReplacementChar {
-		return ObjectStruct{}, fmt.Errorf("invalid encoding")
+		return nil, fmt.Errorf("invalid encoding")
 	}
 	if char != '{' {
-		return ObjectStruct{}, fmt.Errorf("unexpected character %s", string(char))
+		return nil, fmt.Errorf("unexpected character %s", string(char))
 	}
 
 	for {
 		err := skipWhitespace(r)
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+			return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 		}
 
 		char, _, err := r.ReadRune()
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 		}
 		if char == unicode.ReplacementChar {
-			return ObjectStruct{}, fmt.Errorf("invalid encoding")
+			return nil, fmt.Errorf("invalid encoding")
 		}
 		if char == '}' {
 			break
 		}
 		err = r.UnreadRune()
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to unread rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to unread rune: %s", err.Error())
 		}
 
-		key, err := parseString(r)
+		jsonMemberString, err := parseString(r)
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to parse member name: %s", err.Error())
+			return nil, fmt.Errorf("failed to parse member name: %s", err.Error())
 		}
-		if object.Has(key) {
-			return ObjectStruct{}, fmt.Errorf("duplicate member name %s", key)
+		memberName := string(jsonMemberString)
+		if object.Has(memberName) {
+			return nil, fmt.Errorf("duplicate member name %s", memberName)
 		}
 
 		err = skipWhitespace(r)
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+			return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 		}
 
 		char, _, err = r.ReadRune()
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 		}
 		if char == unicode.ReplacementChar {
-			return ObjectStruct{}, fmt.Errorf("invalid encoding")
+			return nil, fmt.Errorf("invalid encoding")
 		}
 		if char != ':' {
-			return ObjectStruct{}, fmt.Errorf("unexpected character %s", string(char))
+			return nil, fmt.Errorf("unexpected character %s", string(char))
 		}
+
+		jsonMemberValue, err := parseEmbeddedValue(r)
+		object.Set(memberName, jsonMemberValue)
 
 		err = skipWhitespace(r)
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
-		}
-
-		nextChar, _, err := r.ReadRune()
-		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
-		}
-		if char == unicode.ReplacementChar {
-			return ObjectStruct{}, fmt.Errorf("invalid encoding")
-		}
-		err = r.UnreadRune()
-		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to unread rune: %s", err.Error())
-		}
-		if nextChar == '{' {
-			value, err := parseEmbeddedObject(r)
-			if err != nil {
-				return ObjectStruct{}, fmt.Errorf("failed to parse object: %s", err.Error())
-			}
-			object.SetJSONObject(key, value)
-		} else if nextChar == '[' {
-			value, err := parseEmbeddedArray(r)
-			if err != nil {
-				return ObjectStruct{}, fmt.Errorf("failed to parse array: %s", err.Error())
-			}
-			object.SetJSONArray(key, value)
-		} else if nextChar == '"' {
-			value, err := parseString(r)
-			if err != nil {
-				return ObjectStruct{}, fmt.Errorf("failed to parse string: %s", err.Error())
-			}
-			object.SetString(key, value)
-		} else if isDigitCharacter(nextChar) {
-			value, err := extractNumber(r)
-			if err != nil {
-				return ObjectStruct{}, fmt.Errorf("failed to extract number: %s", err.Error())
-			}
-			object.SetNumber(key, value)
-		} else {
-			value, err := extractIdentifier(r)
-			if err != nil {
-				return ObjectStruct{}, fmt.Errorf("failed to extract identifier: %s", err.Error())
-			}
-			switch value {
-			case "true":
-				object.SetBool(key, true)
-			case "false":
-				object.SetBool(key, false)
-			case "null":
-				object.SetNull(key)
-			default:
-				return ObjectStruct{}, fmt.Errorf("unexpected identifier %s", value)
-			}
-		}
-
-		err = skipWhitespace(r)
-		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("Failed to skip whitespace: %s", err.Error())
+			return nil, fmt.Errorf("Failed to skip whitespace: %s", err.Error())
 		}
 
 		char, _, err = r.ReadRune()
 		if err != nil {
-			return ObjectStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 		}
 		if char == unicode.ReplacementChar {
-			return ObjectStruct{}, fmt.Errorf("invalid encoding")
+			return nil, fmt.Errorf("invalid encoding")
 		}
 		if char == '}' {
 			break
 		}
 		if char != ',' {
-			return ObjectStruct{}, fmt.Errorf("unexpected character %s", string(char))
+			return nil, fmt.Errorf("unexpected character %s", string(char))
 		}
 	}
 
 	return object, nil
 }
 
-func parseEmbeddedArray(r io.RuneScanner) (ArrayStruct, error) {
+func parseEmbeddedArray(r io.RuneScanner) (ArrayType, error) {
 	array := NewArray()
 
 	err := skipWhitespace(r)
 	if err != nil {
-		return ArrayStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+		return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 	}
 
 	char, _, err := r.ReadRune()
 	if err != nil {
-		return ArrayStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+		return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 	}
 	if char == unicode.ReplacementChar {
-		return ArrayStruct{}, fmt.Errorf("invalid encoding")
+		return nil, fmt.Errorf("invalid encoding")
 	}
 	if char != '[' {
-		return ArrayStruct{}, fmt.Errorf("unexpected character %s", string(char))
+		return nil, fmt.Errorf("unexpected character %s", string(char))
 	}
 
 	for {
 		err := skipWhitespace(r)
 		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+			return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 		}
 
 		char, _, err := r.ReadRune()
 		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 		}
 		if char == unicode.ReplacementChar {
-			return ArrayStruct{}, fmt.Errorf("invalid encoding")
+			return nil, fmt.Errorf("invalid encoding")
 		}
 		if char == ']' {
 			break
 		}
 		err = r.UnreadRune()
 		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to unread rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to unread rune: %s", err.Error())
 		}
 
-		nextChar, _, err := r.ReadRune()
-		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
-		}
-		if char == unicode.ReplacementChar {
-			return ArrayStruct{}, fmt.Errorf("invalid encoding")
-		}
-		err = r.UnreadRune()
-		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to unread rune: %s", err.Error())
-		}
-		if nextChar == '{' {
-			value, err := parseEmbeddedObject(r)
-			if err != nil {
-				return ArrayStruct{}, fmt.Errorf("failed to parse embedded object: %s", err.Error())
-			}
-			array.AddJSONObject(value)
-		} else if nextChar == '[' {
-			value, err := parseEmbeddedArray(r)
-			if err != nil {
-				return ArrayStruct{}, fmt.Errorf("failed to parse embedded array: %s", err.Error())
-			}
-			array.AddJSONArray(value)
-		} else if nextChar == '"' {
-			value, err := parseString(r)
-			if err != nil {
-				return ArrayStruct{}, fmt.Errorf("failed to parse string: %s", err.Error())
-			}
-			array.AddString(value)
-		} else if isDigitCharacter(nextChar) {
-			value, err := extractNumber(r)
-			if err != nil {
-				return ArrayStruct{}, fmt.Errorf("failed to extract number: %s", err.Error())
-			}
-			array.AddNumber(value)
-		} else {
-			value, err := extractIdentifier(r)
-			if err != nil {
-				return ArrayStruct{}, fmt.Errorf("failed to extract identifier: %s", err.Error())
-			}
-
-			switch value {
-			case "true":
-				array.AddBool(true)
-			case "false":
-				array.AddBool(false)
-			case "null":
-				array.AddNull()
-			default:
-				return ArrayStruct{}, fmt.Errorf("unexpected identifier %s", value)
-			}
-		}
+		jsonMemberValue, err := parseEmbeddedValue(r)
+		array.Add(jsonMemberValue)
 
 		err = skipWhitespace(r)
 		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to skip whitespace: %s", err.Error())
+			return nil, fmt.Errorf("failed to skip whitespace: %s", err.Error())
 		}
 
 		char, _, err = r.ReadRune()
 		if err != nil {
-			return ArrayStruct{}, fmt.Errorf("failed to read rune: %s", err.Error())
+			return nil, fmt.Errorf("failed to read rune: %s", err.Error())
 		}
 		if char == unicode.ReplacementChar {
-			return ArrayStruct{}, fmt.Errorf("invalid encoding")
+			return nil, fmt.Errorf("invalid encoding")
 		}
 		if char == ']' {
 			break
 		}
 		if char != ',' {
-			return ArrayStruct{}, fmt.Errorf("unexpected character %s", string(char))
+			return nil, fmt.Errorf("unexpected character %s", string(char))
 		}
 	}
 
 	return array, nil
 }
 
-func parseString(r io.RuneScanner) (string, error) {
+func parseString(r io.RuneScanner) (StringType, error) {
 	b := strings.Builder{}
 
 	char, _, err := r.ReadRune()
@@ -432,10 +401,10 @@ func parseString(r io.RuneScanner) (string, error) {
 
 	}
 
-	return b.String(), nil
+	return StringType(b.String()), nil
 }
 
-func extractNumber(r io.RuneScanner) (string, error) {
+func parseNumber(r io.RuneScanner) (NumberType, error) {
 	extracted := []rune{}
 	char, _, err := r.ReadRune()
 	if err != nil {
@@ -472,7 +441,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 			if char == unicode.ReplacementChar {
 				return "", fmt.Errorf("invalid character encoding")
 			}
-			if !isDigitCharacter(char) {
+			if !isNumberDigitCharacter(char) {
 				err = r.UnreadRune()
 				if err != nil {
 					return "", fmt.Errorf("failed to unread rune: %s", err.Error())
@@ -487,7 +456,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 
 	char, _, err = r.ReadRune()
 	if err != nil && errors.Is(err, io.EOF) {
-		return string(extracted), nil
+		return NumberType(string(extracted)), nil
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to read rune: %s", err.Error())
@@ -505,7 +474,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 			if char == unicode.ReplacementChar {
 				return "", fmt.Errorf("invalid encoding")
 			}
-			if !isDigitCharacter(char) {
+			if !isNumberDigitCharacter(char) {
 				err = r.UnreadRune()
 				if err != nil {
 					return "", fmt.Errorf("failed to unread rune: %s", err.Error())
@@ -523,7 +492,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 
 	char, _, err = r.ReadRune()
 	if err != nil && errors.Is(err, io.EOF) {
-		return string(extracted), nil
+		return NumberType(string(extracted)), nil
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed to read rune: %s", err.Error())
@@ -557,7 +526,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 		if char == unicode.ReplacementChar {
 			return "", fmt.Errorf("invalid encoding")
 		}
-		if !isDigitCharacter(char) {
+		if !isNumberDigitCharacter(char) {
 			return "", fmt.Errorf("unexpected character %s", string(char))
 		}
 		extracted = append(extracted, char)
@@ -565,7 +534,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 		for {
 			char, _, err = r.ReadRune()
 			if err != nil && errors.Is(err, io.EOF) {
-				return string(extracted), nil
+				return NumberType(string(extracted)), nil
 			}
 			if err != nil {
 				return "", fmt.Errorf("failed to read rune: %s", err.Error())
@@ -573,7 +542,7 @@ func extractNumber(r io.RuneScanner) (string, error) {
 			if char == unicode.ReplacementChar {
 				return "", fmt.Errorf("invalid encoding")
 			}
-			if !isDigitCharacter(char) {
+			if !isNumberDigitCharacter(char) {
 				err = r.UnreadRune()
 				if err != nil {
 					return "", fmt.Errorf("failed to unread rune: %s", err.Error())
@@ -589,11 +558,11 @@ func extractNumber(r io.RuneScanner) (string, error) {
 		}
 	}
 
-	return string(extracted), nil
+	return NumberType(string(extracted)), nil
 }
 
-func extractIdentifier(r io.RuneScanner) (string, error) {
-	extracted := []rune{}
+func parseLiteralName(r io.RuneScanner) (string, error) {
+	literalNameCharacters := []rune{}
 	char, _, err := r.ReadRune()
 	if err != nil {
 		return "", fmt.Errorf("failed to read rune: %s", err.Error())
@@ -601,10 +570,10 @@ func extractIdentifier(r io.RuneScanner) (string, error) {
 	if char == unicode.ReplacementChar {
 		return "", fmt.Errorf("invalid encoding")
 	}
-	if !isIdentifierCharacter(char) {
+	if !isLiteralNameCharacter(char) {
 		return "", fmt.Errorf("unexpected character %s", string(char))
 	}
-	extracted = append(extracted, char)
+	literalNameCharacters = append(literalNameCharacters, char)
 
 	for {
 		char, _, err := r.ReadRune()
@@ -617,17 +586,18 @@ func extractIdentifier(r io.RuneScanner) (string, error) {
 		if char == unicode.ReplacementChar {
 			return "", fmt.Errorf("invalid encoding")
 		}
-		if !isIdentifierCharacter(char) {
+		if !isLiteralNameCharacter(char) {
 			err = r.UnreadRune()
 			if err != nil {
 				return "", fmt.Errorf("failed to unread rune: %s", err.Error())
 			}
 			break
 		}
-		extracted = append(extracted, char)
+		literalNameCharacters = append(literalNameCharacters, char)
 	}
 
-	return string(extracted), nil
+	literalName := string(literalNameCharacters)
+	return literalName, nil
 }
 
 func skipWhitespace(r io.RuneScanner) error {
@@ -653,7 +623,7 @@ func skipWhitespace(r io.RuneScanner) error {
 	}
 }
 
-func isIdentifierCharacter(r rune) bool {
+func isLiteralNameCharacter(r rune) bool {
 	if r >= 'A' && r <= 'Z' {
 		return true
 	}
@@ -663,6 +633,6 @@ func isIdentifierCharacter(r rune) bool {
 	return false
 }
 
-func isDigitCharacter(r rune) bool {
+func isNumberDigitCharacter(r rune) bool {
 	return r >= '0' && r <= '9'
 }

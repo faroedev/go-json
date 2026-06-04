@@ -4,6 +4,43 @@ A JSON parser and encoder.
 
 ## Example
 
+### Values
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/pilcrowonpaper/go-json"
+)
+
+func main() {
+	// Parse any JSON-encoded string.
+	jsonValue, err := json.Parse(data)
+	if err != nil {
+		log.Fatalf("Invalid json: %s", err.Error())
+	}
+
+	switch definedJSONValue := jsonValue.(type) {
+	case json.StringType:
+		fmt.Printf("string value: %s\n", string(definedJSONValue)) // wraps a string
+	case json.NumberType:
+		fmt.Printf("number value: %d\n", definedJSONValue.Int()) // wraps a string
+	case json.BooleanType:
+		fmt.Printf("boolean value: %t\n", definedJSONValue) // wraps a bool
+	case json.NullType:
+		fmt.Printf("null value\n")
+	case json.ObjectType:
+		// see Objects example
+	case json.ObjectType:
+		// see Arrays example
+	}
+
+	// Encode any JSON value to string.
+	encoded := json.Encode(jsonValue)
+}
+```
+
 ### Objects
 
 ```go
@@ -15,20 +52,18 @@ import (
 )
 
 func main() {
-    jsonObject, err := json.Parse(data)
+    jsonObject, err := json.ParseObject(data)
     if err != nil {
-        panic(err)
+    	log.Fatal("invalid json or not a json object")
     }
 
     name, err := jsonObject.GetString("name")
-    if err != nil {
-        // Key doesn't exist or the value isn't a string.
-        panic(err)
+    if errors.Is(err, json.ErrObjectMemberNotFound) {
+    	log.Fatal("member not found")
     }
-    fmt.Println(name)
-
-    jsonObject.SetString(name, "pilcrow")
-    fmt.Println(jsonObject.String())
+    if err != nil {
+    	log.Fatal("value not a string")
+    }
 }
 ```
 
@@ -43,20 +78,18 @@ import (
 )
 
 func main() {
-    jsonArray, err := json.ParseArray(data)
+	jsonObject, err := json.ParseObject(data)
     if err != nil {
-        panic(err)
+    	log.Fatal("invalid json or not a json object")
     }
 
-    name, err := jsonArray.GetString(0)
-    if err != nil {
-        // Item doesn't exist or the value isn't a string.
-        panic(err)
+    jsonName, err := jsonObject.GetString(0)
+    if errors.Is(err, json.ErrArrayIndexOutOfBounds) {
+    	log.Fatal("out of bounds")
     }
-    fmt.Println(name)
-
-    jsonArray.SetString(0, "pilcrow")
-    fmt.Println(jsonArray.String())
+    if err != nil {
+    	log.Fatal("value not a string")
+    }
 }
 ```
 
@@ -72,7 +105,7 @@ import (
 
 func main() {
     jsonObjectBuilder := json.NewObjectBuilder()
-    jsonObjectBuilder.AddString("name", "pilcrow")
+    jsonObjectBuilder.Add("name", StringType("pilcrow"))
     s := jsonObjectBuilder.Done()
     fmt.Println(s)
 }

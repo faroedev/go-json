@@ -43,5 +43,5 @@ func TestParseString(t *testing.T) {
 
 type successTestCaseStruct struct {
 	input    string
-	expected string
+	expected StringType
 }

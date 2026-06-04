@@ -1,7 +1,7 @@
 package json
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 )
 
@@ -22,73 +22,31 @@ func NewObjectBuilder(stringCharacterEscapingBehavior StringCharacterEscapingBeh
 // Succeeds even if a member with the same name already exists.
 //
 // Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddJSON(name string, value string) {
+func (objectBuilder *ObjectBuilderStruct) AddJSON(name string, valueJSON string) {
 	if objectBuilder.b.Len() == 0 {
 		objectBuilder.b.WriteRune('{')
 	}
 	if objectBuilder.memberCount > 0 {
 		objectBuilder.b.WriteRune(',')
 	}
-	encodedName := encodeString(name, objectBuilder.stringCharacterEscapingBehavior)
+	encodedName := encodeString(StringType(name), objectBuilder.stringCharacterEscapingBehavior)
 	objectBuilder.b.WriteString(encodedName)
 	objectBuilder.b.WriteRune(':')
-	objectBuilder.b.WriteString(value)
+	objectBuilder.b.WriteString(valueJSON)
 	objectBuilder.memberCount++
 }
 
-// Encodes the name and value to JSON strings, and adds a new object member.
+// Encodes the name and value to JSON and adds a new object member.
+// Takes one of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
+// Returns an error if the value is not a JSON type defined by the package.
 // Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddString(name string, value string) {
-	encoded := encodeString(value, objectBuilder.stringCharacterEscapingBehavior)
-	objectBuilder.AddJSON(name, encoded)
-}
-
-// Encodes the name to a JSON string and value to a JSON number, and adds a new object member.
-// Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddInt(name string, value int) {
-	encoded := strconv.FormatInt(int64(value), 10)
-	objectBuilder.AddJSON(name, encoded)
-}
-
-// Encodes the name to a JSON string and value to a JSON number, and adds a new object member.
-// Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddInt64(name string, value int64) {
-	encoded := strconv.FormatInt(value, 10)
-	objectBuilder.AddJSON(name, encoded)
-}
-
-// Encodes the name to a JSON string and value to a JSON number, and adds a new object member.
-// Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddInt32(name string, value int32) {
-	objectBuilder.AddInt64(name, int64(value))
-}
-
-// Encodes the name to a JSON string and value to a JSON boolean, and adds a new object member.
-// Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddBool(name string, value bool) {
-	if value {
-		objectBuilder.AddJSON(name, "true")
-	} else {
-		objectBuilder.AddJSON(name, "false")
+func (objectBuilder *ObjectBuilderStruct) Add(name string, value any) error {
+	encoded, err := Encode(value, objectBuilder.stringCharacterEscapingBehavior)
+	if err != nil {
+		return fmt.Errorf("failed to encode value: %s", err)
 	}
-}
-
-// Encodes the name to a JSON string and adds a new object member with a null value.
-// Succeeds even if a member with the same name already exists.
-//
-// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
-func (objectBuilder *ObjectBuilderStruct) AddNull(name string) {
-	objectBuilder.AddJSON(name, `null`)
+	objectBuilder.AddJSON(name, encoded)
+	return nil
 }
 
 // Returns the built JSON.
@@ -105,7 +63,7 @@ func (objectBuilder *ObjectBuilderStruct) Done() string {
 type ArrayBuilderStruct struct {
 	b                               *strings.Builder
 	stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface
-	elementCount                    int
+	memberCount                     int
 }
 
 func NewArrayBuilder(stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) *ArrayBuilderStruct {
@@ -113,56 +71,33 @@ func NewArrayBuilder(stringCharacterEscapingBehavior StringCharacterEscapingBeha
 	return arrayBuilder
 }
 
-// Adds the JSON value as a new array element.
+// Adds a new object member with the value untouched.
 // The value is assumed to be valid JSON.
-func (arrayBuilder *ArrayBuilderStruct) AddJSON(value string) {
+// Succeeds even if a member with the same name already exists.
+//
+// Control characters not allowed in JSON strings are ignored when encoding values to JSON strings.
+func (arrayBuilder *ArrayBuilderStruct) AddJSON(valueJSON string) {
 	if arrayBuilder.b.Len() == 0 {
 		arrayBuilder.b.WriteRune('[')
 	}
-	if arrayBuilder.elementCount > 0 {
+	if arrayBuilder.memberCount > 0 {
 		arrayBuilder.b.WriteRune(',')
 	}
-	arrayBuilder.b.WriteString(value)
-	arrayBuilder.elementCount++
+	arrayBuilder.b.WriteString(valueJSON)
+	arrayBuilder.memberCount++
 }
 
-// Encodes the value to a JSON string and adds it as a new array element.
-// Control characters not allowed in JSON strings are ignored when encoding.
-func (arrayBuilder *ArrayBuilderStruct) AddString(value string) {
-	encoded := encodeString(value, arrayBuilder.stringCharacterEscapingBehavior)
-	arrayBuilder.AddJSON(encoded)
-}
-
-// Encodes the value to a JSON number and adds it as a new array element.
-func (arrayBuilder *ArrayBuilderStruct) AddInt(value int) {
-	encoded := strconv.FormatInt(int64(value), 10)
-	arrayBuilder.AddJSON(encoded)
-}
-
-// Encodes the value to a JSON number and adds it as a new array element.
-func (arrayBuilder *ArrayBuilderStruct) AddInt64(value int64) {
-	encoded := strconv.FormatInt(value, 10)
-	arrayBuilder.AddJSON(encoded)
-}
-
-// Encodes the value to a JSON number and adds it as a new array element.
-func (arrayBuilder *ArrayBuilderStruct) AddInt32(key string, value int32) {
-	encoded := strconv.FormatInt(int64(value), 10)
-	arrayBuilder.AddJSON(encoded)
-}
-
-// Encodes the value to a JSON boolean and adds it as a new array element.
-func (arrayBuilder *ArrayBuilderStruct) AddBool(value bool) {
-	if value {
-		arrayBuilder.AddJSON("true")
-	} else {
-		arrayBuilder.AddJSON("false")
+// Encodes the value to JSON and adds a new object member.
+// Takes one of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
+// Returns an error if the value is not a JSON type defined by the package.
+// Succeeds even if a member with the same name already exists.
+func (arrayBuilder *ArrayBuilderStruct) Add(value any) error {
+	encoded, err := Encode(value, arrayBuilder.stringCharacterEscapingBehavior)
+	if err != nil {
+		return fmt.Errorf("failed to encode value: %s", err)
 	}
-}
-
-// Adds null to the array.
-func (arrayBuilder *ArrayBuilderStruct) AddNull() {
-	arrayBuilder.AddJSON("null")
+	arrayBuilder.AddJSON(encoded)
+	return nil
 }
 
 // Returns the built JSON.

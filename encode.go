@@ -1,9 +1,44 @@
 package json
 
 import (
+	"errors"
 	"strings"
 	"unicode/utf16"
 )
+
+// One of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
+// Returns an error if the value is not a JSON type defined by the package.
+func Encode(value any, stringCharacterEscapingBehavior StringCharacterEscapingBehaviorInterface) (string, error) {
+	switch definedValue := value.(type) {
+	case StringType:
+		encoded := encodeString(definedValue, stringCharacterEscapingBehavior)
+		return encoded, nil
+	case NumberType:
+		return string(definedValue), nil
+	case BooleanType:
+		if bool(definedValue) {
+			return "true", nil
+		}
+		return "false", nil
+	case NullType:
+		return "null", nil
+	case ObjectType:
+		builder := NewObjectBuilder(stringCharacterEscapingBehavior)
+		for key, value := range definedValue {
+			builder.Add(key, value)
+		}
+		encoded := builder.Done()
+		return encoded, nil
+	case ArrayType:
+		builder := NewArrayBuilder(stringCharacterEscapingBehavior)
+		for _, value := range definedValue {
+			builder.Add(value)
+		}
+		encoded := builder.Done()
+		return encoded, nil
+	}
+	return "", errors.New("unknown json value")
+}
 
 // UseCharacter reports whether a character must be written directly in a JSON string without escaping.
 // The parameter r must be a character that does not require escaping.
@@ -42,7 +77,7 @@ var shorthandStringCharacterEscapeSequences = map[rune]string{
 	'\t': `\t`,
 }
 
-func encodeString(s string, characterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
+func encodeString(s StringType, characterEscapingBehavior StringCharacterEscapingBehaviorInterface) string {
 	b := strings.Builder{}
 	b.WriteRune('"')
 	for _, char := range s {
