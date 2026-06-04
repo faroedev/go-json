@@ -22,7 +22,7 @@ func (array *ArrayType) Add(value any) {
 	*array = append(*array, value)
 }
 
-// Returns [ErrArrayOutOfBounds] if index is invalid.
+// Returns [ErrArrayIndexOutOfBounds] if index is invalid.
 // Takes one of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
 func (array ArrayType) Set(index int, value any) error {
 	if index < 0 || index >= len(array) {
@@ -32,7 +32,7 @@ func (array ArrayType) Set(index int, value any) error {
 	return nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds.
 // Returns one of StringType, NumberType, BooleanType, NullType, ObjectType, or ArrayType.
 func (array ArrayType) Get(index int) (any, error) {
 	if index < 0 || index >= len(array) {
@@ -41,7 +41,7 @@ func (array ArrayType) Get(index int) (any, error) {
 	return array[index], nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds, or an error if the value isn't a string.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds, or an error if the value isn't a string.
 func (array ArrayType) GetString(index int) (StringType, error) {
 	value, err := array.Get(index)
 	if err != nil {
@@ -54,7 +54,7 @@ func (array ArrayType) GetString(index int) (StringType, error) {
 	return jsonString, nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds, or an error if the value isn't a number.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds, or an error if the value isn't a number.
 func (array ArrayType) GetNumber(index int) (NumberType, error) {
 	value, err := array.Get(index)
 	if err != nil {
@@ -67,7 +67,7 @@ func (array ArrayType) GetNumber(index int) (NumberType, error) {
 	return jsonNumber, nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds, or an error if the value isn't a boolean.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds, or an error if the value isn't a boolean.
 func (array ArrayType) GetBoolean(index int) (BooleanType, error) {
 	value, err := array.Get(index)
 	if err != nil {
@@ -80,7 +80,7 @@ func (array ArrayType) GetBoolean(index int) (BooleanType, error) {
 	return jsonBoolean, nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds, or an error if the value isn't an object.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds, or an error if the value isn't an object.
 func (array ArrayType) GetObject(index int) (ObjectType, error) {
 	value, err := array.Get(index)
 	if err != nil {
@@ -93,7 +93,7 @@ func (array ArrayType) GetObject(index int) (ObjectType, error) {
 	return jsonObject, nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds, or an error if the value isn't an array.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds, or an error if the value isn't an array.
 func (array ArrayType) GetArray(index int) (ArrayType, error) {
 	value, err := array.Get(index)
 	if err != nil {
@@ -106,7 +106,7 @@ func (array ArrayType) GetArray(index int) (ArrayType, error) {
 	return jsonArray, nil
 }
 
-// Returns [ErrArrayOutOfBounds] if the index is out of bounds.
+// Returns [ErrArrayIndexOutOfBounds] if the index is out of bounds.
 func (array ArrayType) IsNull(index int) (bool, error) {
 	value, err := array.Get(index)
 	if err != nil {
